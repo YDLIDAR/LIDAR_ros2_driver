@@ -1,0 +1,13 @@
+lidar_ros2_driver_node:
+  ros__parameters:
+    port: 192.168.0.11
+    frame_id: laser_frame
+    baudrate: 8090
+    lidar_type: 0
+    sample_rate: 20
+    auto_reconnect: true
+    angle_max: 30.0
+    angle_min: 330.0
+    range_max: 30.0
+    range_min: 0.01
+    frequency: 20.0
