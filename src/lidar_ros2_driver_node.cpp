@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
 
   CLidar laser;
   std::string str_optvalue = "192.168.0.11";
-  node->declare_parameter("port", str_optvalue);
-  node->get_parameter("port", str_optvalue);
+  node->declare_parameter("ip", str_optvalue);
+  node->get_parameter("ip", str_optvalue);
   ///lidar port
   laser.setlidaropt(LidarPropSerialPort, str_optvalue.c_str(), str_optvalue.size());
 
@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
   //////////////////////int property/////////////////
   /// lidar  port
   int optval = 8090;
-  node->declare_parameter("baudrate", optval);
-  node->get_parameter("baudrate", optval);
+  node->declare_parameter("port", optval);
+  node->get_parameter("port", optval);
   laser.setlidaropt(LidarPropSerialBaudrate, &optval, sizeof(int));
   /// lidar type
   optval = TYPE_LIDAR;
@@ -140,7 +140,6 @@ int main(int argc, char *argv[]) {
     LaserScan scan;//
 
     if (laser.doProcessSimple(scan)) {
-
       auto scan_msg = std::make_shared<sensor_msgs::msg::LaserScan>();
       auto pc_msg = std::make_shared<sensor_msgs::msg::PointCloud>();
 
@@ -150,46 +149,43 @@ int main(int argc, char *argv[]) {
       pc_msg->header = scan_msg->header;
       scan_msg->angle_min = scan.config.min_angle;
       scan_msg->angle_max = scan.config.max_angle;
+      scan.config.angle_increment = 300.0 / scan.points.size() / 180 * M_PI;
       scan_msg->angle_increment = scan.config.angle_increment;
       scan_msg->scan_time = scan.config.scan_time;
       scan_msg->time_increment = scan.config.time_increment;
       scan_msg->range_min = scan.config.min_range;
       scan_msg->range_max = scan.config.max_range;
-      int size = (scan.config.max_angle - scan.config.min_angle)/ scan.config.angle_increment + 1;
+      int size = (scan.config.max_angle - scan.config.min_angle) / scan.config.angle_increment + 1;
       scan_msg->ranges.resize(size);
       scan_msg->intensities.resize(size);
-
       pc_msg->channels.resize(2);
       int idx_intensity = 0;
       pc_msg->channels[idx_intensity].name = "intensities";
       int idx_timestamp = 1;
       pc_msg->channels[idx_timestamp].name = "stamps";
-      
       for(size_t i=0; i < scan.points.size(); i++) {
-        int index = std::ceil((math::from_degrees(scan.points[i].angle) - scan.config.min_angle)/scan.config.angle_increment);
-        if(index >=0 && index < size) {
-	  if (scan.points[i].range >= scan.config.min_range) {
+        int index = std::ceil((scan.points[i].angle / 180.f * M_PI - M_PI - scan.config.min_angle) 
+          / scan.config.angle_increment);
+        if(index >= 0 && index < size) {
+	  if (scan.points[i].range >= scan.config.min_range && scan.points[i].range <= scan.config.max_range) {
             scan_msg->ranges[index] = scan.points[i].range;
             scan_msg->intensities[index] = scan.points[i].intensity;
 	  }
         }
-
-	if (scan.points[i].range >= scan.config.min_range &&
-             scan.points[i].range <= scan.config.max_range) {
+        float curAngle = scan.points[i].angle / 180.f * M_PI - M_PI;
+	if (curAngle >= scan.config.min_angle && curAngle <= scan.config.max_angle
+	    && scan.points[i].range >= scan.config.min_range && scan.points[i].range <= scan.config.max_range) {
           geometry_msgs::msg::Point32 point;
-          point.x = scan.points[i].range * cos(scan.points[i].angle);
-          point.y = scan.points[i].range * sin(scan.points[i].angle);
+          point.x = scan.points[i].range * cos(curAngle);
+          point.y = scan.points[i].range * sin(curAngle);
           point.z = 0.0;
           pc_msg->points.push_back(point);
           pc_msg->channels[idx_intensity].values.push_back(scan.points[i].intensity);
           pc_msg->channels[idx_timestamp].values.push_back(i * scan.config.time_increment);
         }
-
       }
-
       laser_pub->publish(*scan_msg);
       pc_pub->publish(*pc_msg);
-
     } else {
       RCLCPP_ERROR(node->get_logger(), "Failed to get scan");
     }
