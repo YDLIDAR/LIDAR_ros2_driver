@@ -11,6 +11,8 @@ source install/setup.bash
 
 ```
 ros2 launch lidar_ros2_driver lidar_launch.py
+或
+ros2 launch lidar_ros2_driver lidar_launch_view.py
 ```
 
 输出数据如下表:
