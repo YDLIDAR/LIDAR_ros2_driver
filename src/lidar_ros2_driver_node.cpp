@@ -103,6 +103,10 @@ int main(int argc, char *argv[]) {
   node->get_parameter("frequency", f_optvalue);
   laser.setlidaropt(LidarPropScanFrequency, &f_optvalue, sizeof(float));
 
+  node->declare_parameter("reversion", b_optvalue);
+  node->get_parameter("reversion", b_optvalue);
+  laser.setlidaropt(LidarPropReversion, &b_optvalue, sizeof(bool));
+
   bool ret = laser.initialize();
   if (ret) {
     ret = laser.turnOn();

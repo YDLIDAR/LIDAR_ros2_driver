@@ -9,5 +9,5 @@ lidar_ros2_driver_node:
     range_max: 30.0
     range_min: 0.01
     frequency: 20.0
-    sample_rate: 40
-    reversion: false
+    sample_rate: 34
+    reversion: true
